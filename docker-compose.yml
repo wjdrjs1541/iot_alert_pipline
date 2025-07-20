@@ -1,0 +1,207 @@
+
+
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.3.2
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "22181:2181"
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "2181"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  kafka1:
+    image: confluentinc/cp-kafka:7.3.2
+    container_name: kafka1
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    ports:
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka1:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_NUM_PARTITIONS: 2
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "29092"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  kafka2:
+    image: confluentinc/cp-kafka:7.3.2
+    container_name: kafka2
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+      kafka1:
+        condition: service_healthy
+    ports:
+      - "29093:29093"
+    environment:
+      KAFKA_BROKER_ID: 2
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka2:29093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_NUM_PARTITIONS: 2
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "29093"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    depends_on:
+      - kafka1
+      - kafka2
+    ports:
+      - "8780:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: iot-broker-cluster
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka1:29092,kafka2:29093
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+
+  postgresql:
+    image: postgres:15
+    container_name: postgresql
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: iot_data
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d 
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  sensor-a-producer:
+    build:
+      context: ./producer
+    container_name: sensor-a-producer
+    command: ["python", "IOT_Sensor_A_producer.py"]
+    depends_on:
+      kafka1:
+        condition: service_healthy
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./data:/app/data
+    restart: on-failure
+
+  sensor-b-producer:
+    build:
+      context: ./producer
+    container_name: sensor-b-producer
+    command: ["python", "IOT_Sensor_B_producer.py"]
+    depends_on:
+      kafka1:
+        condition: service_healthy
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./data:/app/data
+    restart: on-failure
+
+  processor:
+    build:
+      context: ./processor
+    container_name: iot-processor
+    depends_on:
+      kafka1:
+        condition: service_healthy
+      postgresql:
+        condition: service_healthy
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: on-failure
+    command: ["python", "iot_data_processor.py"]
+
+  spark-master:
+    build:
+      context: ./spark
+    container_name: spark-master
+    environment:
+      - SPARK_MODE=master
+    ports:
+      - "9577:7077"
+      - "9585:8080"
+    volumes:
+      - ./spark:/opt/spark-apps  # calculate_anomaly_range.py 위치
+      - ./spark/jars:/opt/spark/jars
+
+  spark-worker:
+    build:
+      context: ./spark
+    container_name: spark-worker
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+    depends_on:
+      - spark-master
+    ports:
+      - "8082:8080"
+    volumes:
+      - ./spark:/opt/spark-apps
+      - ./spark/jars:/opt/spark/jars
+    
+
+  airflow-webserver:
+    build:
+      context: ./airflow
+    container_name: airflow-webserver
+    depends_on:
+      - postgresql
+      - kafka1
+      - spark-master
+    environment:
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://postgres:postgres@postgresql/iot_data
+      - AIRFLOW__WEBSERVER__SECRET_KEY=GunDataEngineerSecretKey2025
+      - TZ=Asia/Seoul
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./spark:/opt/airflow/dags/scripts
+      - ./spark/jars:/opt/spark/jars
+      - /var/run/docker.sock:/var/run/docker.sock
+    command:  ["airflow", "webserver"]
+
+  airflow-scheduler:
+    build:
+      context: ./airflow
+    container_name: airflow-scheduler
+    depends_on:
+      - airflow-webserver
+    environment:
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://postgres:postgres@postgresql/iot_data
+      - AIRFLOW__WEBSERVER__SECRET_KEY=GunDataEngineerSecretKey2025
+      - TZ=Asia/Seoul
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./spark:/opt/airflow/dags/scripts
+      - ./spark/jars:/opt/spark/jars
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: ["airflow", "scheduler"]
+
+volumes:
+  pgdata:
