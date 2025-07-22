@@ -98,7 +98,7 @@ services:
     build:
       context: ./producer
     container_name: sensor-a-producer
-    command: ["python", "IOT_Sensor_A_producer.py"]
+    command: ["python", "iot_sensor_producer.py", "--machine", "sensor_B"]
     depends_on:
       kafka1:
         condition: service_healthy
@@ -112,7 +112,7 @@ services:
     build:
       context: ./producer
     container_name: sensor-b-producer
-    command: ["python", "IOT_Sensor_B_producer.py"]
+    command: ["python", "iot_sensor_producer.py", "--machine", "sensor_B"]
     depends_on:
       kafka1:
         condition: service_healthy

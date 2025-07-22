@@ -1,0 +1,16 @@
+# 모든 텍스트 파일은 자동 EOL 관리
+* text=auto
+
+# 쉘 스크립트와 Dockerfile 은 항상 LF
+*.sh text eol=lf
+Dockerfile text eol=lf
+
+# Python 도 항상 LF (권장)
+*.py text eol=lf
+
+# YAML 파일도 LF
+*.yaml text eol=lf
+*.yml text eol=lf
+
+# Markdown 도 LF
+*.md text eol=lf

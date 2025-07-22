@@ -2,7 +2,6 @@ FROM apache/airflow:2.9.0
 
 USER root
 
-# openjdk-11-jdk 대신 default-jdk 사용
 RUN apt-get update --allow-releaseinfo-change && \
     apt-get install -y --no-install-recommends \
     gcc \
@@ -20,6 +19,9 @@ USER airflow
 COPY requirements.txt /opt/airflow/requirements.txt
 RUN pip install --no-cache-dir -r /opt/airflow/requirements.txt
 
+USER root
 COPY entrypoint.sh /opt/airflow/entrypoint.sh
+RUN chmod +x /opt/airflow/entrypoint.sh
+USER airflow
 
 ENTRYPOINT ["/opt/airflow/entrypoint.sh"]
