@@ -3,6 +3,7 @@ import json
 import time
 import logging
 from kafka import KafkaProducer
+from datetime import datetime
 import argparse
 
 KAFKA_BROKER = 'kafka1:29092'
@@ -38,10 +39,10 @@ df = df[['mqtt.topic', 'mqtt.msg']].fillna('null')
 # ✅ 메시지 전송
 for idx, row in df.iterrows():
     message = {
-        'machine': args.machine,
+        'machine_id': args.machine,
         'topic': row['mqtt.topic'],
-        'msg': row['mqtt.msg'],
-        'timestamp': time.time()
+        'mqtt_msg': row['mqtt.msg'],
+        'sent_time': datetime.now().isoformat()
     }
     producer.send(KAFKA_TOPIC, key=args.machine, value=message)
     logging.info(f"[{args.machine}] {message}")

@@ -1,5 +1,2 @@
-pandas
-pyod
-numpy
-scikit-learn
-pyarrow
+sqlalchemy
+psycopg2-binary

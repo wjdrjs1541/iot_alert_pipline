@@ -9,12 +9,14 @@ CREATE TABLE IF NOT EXISTS sensor_data (
 );
 
 
-CREATE TABLE IF NOT EXISTS anomaly_range (
+CREATE TABLE anomaly_range (
     id SERIAL PRIMARY KEY,
-    machine_id TEXT NOT NULL,
+    machine_id VARCHAR,
     min_temp FLOAT,
     max_temp FLOAT,
     min_humidity FLOAT,
     max_humidity FLOAT,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    method VARCHAR,
+    updated_at TIMESTAMP DEFAULT NOW(),
+    CONSTRAINT uq_machine_method UNIQUE (machine_id, method)
 );
