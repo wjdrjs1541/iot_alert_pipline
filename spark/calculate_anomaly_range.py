@@ -12,6 +12,7 @@ spark = SparkSession.builder \
 sensor_df = spark.read \
     .format("jdbc") \
     .option("url", "jdbc:postgresql://postgresql:5432/iot_data") \
+    .option("dbtable", "(SELECT * FROM sensor_data WHERE sent_time >= current_timestamp - interval '1 day') AS recent") \
     .option("dbtable", "sensor_data") \
     .option("user", "postgres") \
     .option("password", "postgres") \
@@ -24,10 +25,10 @@ sensor_df.createOrReplaceTempView("sensor_data")
 quantile_df = spark.sql("""
     SELECT
         machine_id,
-        percentile_approx(temperature, 0.01) AS min_temp,
-        percentile_approx(temperature, 0.99) AS max_temp,
-        percentile_approx(humidity, 0.01) AS min_humidity,
-        percentile_approx(humidity, 0.99) AS max_humidity,
+        percentile_approx(temperature, 0.001) AS min_temp,
+        percentile_approx(temperature, 0.999) AS max_temp,
+        percentile_approx(humidity, 0.001) AS min_humidity,
+        percentile_approx(humidity, 0.999) AS max_humidity,
         'quantile' AS method,
         current_timestamp() AS updated_at
     FROM sensor_data
@@ -48,10 +49,10 @@ iqr_base = spark.sql("""
 
 iqr_df = iqr_base.selectExpr(
     "machine_id",
-    "q1_temp - 1.5 * (q3_temp - q1_temp) AS min_temp",
-    "q3_temp + 1.5 * (q3_temp - q1_temp) AS max_temp",
-    "q1_hum - 1.5 * (q3_hum - q1_hum) AS min_humidity",
-    "q3_hum + 1.5 * (q3_hum - q1_hum) AS max_humidity",
+    "q1_temp - 10.0 * (q3_temp - q1_temp) AS min_temp",
+    "q3_temp + 10.0 * (q3_temp - q1_temp) AS max_temp",
+    "q1_hum - 10.0 * (q3_hum - q1_hum) AS min_humidity",
+    "q3_hum + 10.0 * (q3_hum - q1_hum) AS max_humidity",
     "'iqr' AS method",
     "current_timestamp() AS updated_at"
 )

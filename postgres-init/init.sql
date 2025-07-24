@@ -20,3 +20,15 @@ CREATE TABLE anomaly_range (
     updated_at TIMESTAMP DEFAULT NOW(),
     CONSTRAINT uq_machine_method UNIQUE (machine_id, method)
 );
+
+CREATE TABLE anomaly_log (
+    id SERIAL PRIMARY KEY,
+    machine_id VARCHAR(255),
+    temperature DOUBLE PRECISION,
+    humidity DOUBLE PRECISION,
+    sent_time TIMESTAMP,
+    temp_anomaly BOOLEAN,
+    hum_anomaly BOOLEAN,
+    method VARCHAR(50),  -- quantile / iqr
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

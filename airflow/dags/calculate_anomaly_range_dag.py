@@ -5,9 +5,9 @@ from airflow.operators.bash import BashOperator
 default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
-    'start_date': datetime(2025, 7, 20, 0, 0),
+    'start_date': datetime(2025, 7, 24, 0, 0), 
     'retries': 3,
-    'retry_delay': timedelta(minutes=2),
+    'retry_delay': timedelta(minutes=3),
     'retry_exponential_backoff': True,
     'max_retry_delay': timedelta(minutes=10),
     'execution_timeout': timedelta(minutes=8),
