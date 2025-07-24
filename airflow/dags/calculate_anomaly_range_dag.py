@@ -6,17 +6,22 @@ default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
     'start_date': datetime(2025, 7, 20, 0, 0),
-    'retries': 1,
-    'retry_delay': timedelta(minutes=3),
+    'retries': 3,
+    'retry_delay': timedelta(minutes=2),
+    'retry_exponential_backoff': True,
+    'max_retry_delay': timedelta(minutes=10),
+    'execution_timeout': timedelta(minutes=8),
+        
 }
 
 dag = DAG(
     'calculate_anomaly_range_dag',
     default_args=default_args,
-    description='spark-master 컨테이너에서 직접 spark-submit 실행 (PyOD 이상치 기준)',
-    schedule_interval="*/10 * * * *",  # 10분마다 실행
+    description='spark-master 컨테이너에서 직접 spark-submit 실행 (Quantile, IQR)',
+    schedule_interval="@hourly",  # 매 시간 실행
     catchup=False,
     is_paused_upon_creation=False,  # 자동 시작
+    max_active_runs=1,
     tags=['spark', 'anomaly', 'batch']
 )
 
