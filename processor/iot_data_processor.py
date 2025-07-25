@@ -8,10 +8,37 @@ import psycopg2
 from kafka import KafkaConsumer
 from kafka.admin import KafkaAdminClient, NewTopic
 from kafka.errors import TopicAlreadyExistsError
-
+import smtplib
+import ssl
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from dotenv import load_dotenv
 
 # ✅ config 경로
 CONFIG_PATH = "/config/kafka_config.yaml"
+# ✅ .env 로드
+load_dotenv("/config/.env")
+
+def send_email_alert(subject: str, body: str):
+    sender = os.getenv("EMAIL_ADDRESS")
+    receiver = os.getenv("EMAIL_RECEIVER")
+    password = os.getenv("EMAIL_PASSWORD")
+
+    message = MIMEMultipart()
+    message["Subject"] = subject
+    message["From"] = sender
+    message["To"] = receiver
+
+    message.attach(MIMEText(body, "plain"))
+
+    context = ssl.create_default_context()
+    try:
+        with smtplib.SMTP_SSL(os.getenv("EMAIL_HOST"), int(os.getenv("EMAIL_PORT")), context=context) as server:
+            server.login(sender, password)
+            server.sendmail(sender, receiver, message.as_string())
+        logger.info("📧 이상치 이메일 알림 전송 완료")
+    except Exception as e:
+        logger.error(f"🚨 이메일 전송 실패: {e}")
 
 def load_config(path: str) -> dict:
     with open(path, "r") as file:
@@ -135,6 +162,18 @@ for msg in consumer:
 
         if is_temp_anomaly or is_hum_anomaly:
             logger.warning(f"🚨 이상치 탐지됨! [method={method}] machine_id={data['machine_id']}, temp={temperature}, hum={humidity}")
+            # ✅ 이메일 전송
+            subject = f"[이상치 알림] {method.upper()} - machine_id: {data['machine_id']}"
+            body = f"""
+            [이상치 감지]
+            - 감지 방식: {method}
+            - Machine ID: {data['machine_id']}
+            - 온도: {temperature}
+            - 습도: {humidity}
+            - 전송 시각: {data['sent_time']}
+            """
+            send_email_alert(subject, body)
+            
             execute_with_retry(
                 cursor,
                 "INSERT INTO anomaly_log (machine_id, temperature, humidity, sent_time, temp_anomaly, hum_anomaly, method) VALUES (%s, %s, %s, %s, %s, %s, %s)",
