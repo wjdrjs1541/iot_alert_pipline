@@ -1,0 +1,6 @@
+spark:
+  container: spark-master
+  submit_path: /opt/bitnami/spark/bin/spark-submit
+  master_url: spark://spark-master:7077
+  jars: /opt/spark/jars/postgresql-42.7.3.jar
+  app: /opt/spark-apps/calculate_anomaly_range.py

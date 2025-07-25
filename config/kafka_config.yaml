@@ -1,0 +1,14 @@
+kafka:
+  brokers:
+    - kafka1:29092
+    - kafka2:29093
+  topic: iot-sensor-events
+
+producer:
+  acks: all
+  linger_ms: 0
+  enable_idempotence: true
+  csv_path: /app/data/DNN-EdgeIIoT-dataset.csv  
+
+consumer:
+  group_id: sensor-consumer-group3

@@ -1,1 +1,6 @@
 data/DNN-EdgeIIoT-dataset.csv
+*.py[cod]
+__pycache__/
+*.pyc
+*.pyo
+*.pyd

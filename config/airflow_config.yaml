@@ -1,0 +1,6 @@
+airflow:
+  retries: 3
+  retry_delay_minutes: 3
+  max_retry_delay_minutes: 10
+  execution_timeout_minutes: 8
+  schedule_interval: "@hourly"

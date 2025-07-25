@@ -1,16 +1,34 @@
-
-from kafka import KafkaConsumer
-import psycopg2
+import yaml
+import os
 import json
-import logging
-import binascii
 import time
+import binascii
+import logging
+import psycopg2
+from kafka import KafkaConsumer
 from kafka.admin import KafkaAdminClient, NewTopic
 from kafka.errors import TopicAlreadyExistsError
 
-# ✅ Kafka Config
-KAFKA_BROKER_PROCESSOR = ["kafka1:29092", "kafka2:29093"]
-KAFKA_TOPIC = 'iot-sensor-events'
+
+# ✅ config 경로
+CONFIG_PATH = "/config/kafka_config.yaml"
+
+def load_config(path: str) -> dict:
+    with open(path, "r") as file:
+        return yaml.safe_load(file)
+
+config = load_config(CONFIG_PATH)
+
+# ✅ 설정 파싱
+kafka_config = config["kafka"]
+producer_config = config["producer"]
+consumer_config = config["consumer"]
+
+KAFKA_BROKERS = kafka_config['brokers']
+KAFKA_TOPIC = kafka_config['topic']
+CSV_PATH = producer_config['csv_path']
+
+GROUP_ID = consumer_config['group_id']
 
 # ✅ 로깅 설정
 logging.basicConfig(
@@ -48,10 +66,16 @@ def execute_with_retry(cursor, query, values, retries=3, delay=1):
     return False
 
 
-# PostgreSQL 연결 (재시도 포함)
+# ✅ PostgreSQL 연결 (재시도 포함)
 while True:
     try:
-        conn = psycopg2.connect(host="postgresql", database="iot_data", user="postgres", password="postgres", port="5432")
+        conn = psycopg2.connect(
+            host="postgresql",
+            database="iot_data",
+            user="postgres",
+            password="postgres",
+            port="5432"
+        )
         cursor = conn.cursor()
         break
     except Exception as e:
@@ -59,13 +83,14 @@ while True:
         time.sleep(3)
 
 
+# ✅ Kafka Consumer 초기화
 consumer = KafkaConsumer(
     KAFKA_TOPIC,
-    bootstrap_servers=KAFKA_BROKER_PROCESSOR,
+    bootstrap_servers=KAFKA_BROKERS,
     value_deserializer=lambda m: json.loads(m.decode('utf-8')),
     auto_offset_reset='earliest',
     enable_auto_commit=True,
-    group_id='sensor-consumer-group3',
+    group_id=GROUP_ID,
     session_timeout_ms=10000,
     heartbeat_interval_ms=3000,
 )
