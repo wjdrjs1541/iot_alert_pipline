@@ -1,4 +1,3 @@
-import yaml
 import os
 import json
 import time
@@ -12,50 +11,31 @@ import smtplib
 import ssl
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from dotenv import load_dotenv
+import sys
 
-# ✅ config 경로
-CONFIG_PATH = "/config/kafka_config.yaml"
-# ✅ .env 로드
-load_dotenv("/config/.env")
+# 상위 디렉토리를 path에 추가하여 다른 모듈을 import할 수 있도록 함
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from config.config import KAFKA_BROKERS, KAFKA_TOPIC, GROUP_ID, EMAIL_SENDER, EMAIL_RECEIVER, EMAIL_PASSWORD, EMAIL_SMTP_PORT, EMAIL_SMTP_SERVER, POSTGRESQL_HOST, POSTGRESQL_DB, POSTGRESQL_USER, POSTGRESQL_PASSWORD, POSTGRESQL_PORT
+
 
 def send_email_alert(subject: str, body: str):
-    sender = os.getenv("EMAIL_ADDRESS")
-    receiver = os.getenv("EMAIL_RECEIVER")
-    password = os.getenv("EMAIL_PASSWORD")
 
     message = MIMEMultipart()
     message["Subject"] = subject
-    message["From"] = sender
-    message["To"] = receiver
+    message["From"] = EMAIL_SENDER
+    message["To"] = EMAIL_RECEIVER
 
     message.attach(MIMEText(body, "plain"))
 
     context = ssl.create_default_context()
     try:
-        with smtplib.SMTP_SSL(os.getenv("EMAIL_HOST"), int(os.getenv("EMAIL_PORT")), context=context) as server:
-            server.login(sender, password)
-            server.sendmail(sender, receiver, message.as_string())
+        with smtplib.SMTP_SSL(EMAIL_SMTP_SERVER, EMAIL_SMTP_PORT, context=context) as server:
+            server.login(EMAIL_SENDER, EMAIL_PASSWORD)
+            server.sendmail(EMAIL_SENDER, EMAIL_RECEIVER, message.as_string())
         logger.info("📧 이상치 이메일 알림 전송 완료")
     except Exception as e:
         logger.error(f"🚨 이메일 전송 실패: {e}")
 
-def load_config(path: str) -> dict:
-    with open(path, "r") as file:
-        return yaml.safe_load(file)
-
-config = load_config(CONFIG_PATH)
-
-# ✅ 설정 파싱
-kafka_config = config["kafka"]
-producer_config = config["producer"]
-consumer_config = config["consumer"]
-
-KAFKA_BROKERS = kafka_config['brokers']
-KAFKA_TOPIC = kafka_config['topic']
-CSV_PATH = producer_config['csv_path']
-
-GROUP_ID = consumer_config['group_id']
 
 # ✅ 로깅 설정
 logging.basicConfig(
@@ -97,11 +77,11 @@ def execute_with_retry(cursor, query, values, retries=3, delay=1):
 while True:
     try:
         conn = psycopg2.connect(
-            host="postgresql",
-            database="iot_data",
-            user="postgres",
-            password="postgres",
-            port="5432"
+            host= POSTGRESQL_HOST,
+            database= POSTGRESQL_DB,
+            user= POSTGRESQL_USER,
+            password= POSTGRESQL_PASSWORD,
+            port= POSTGRESQL_PORT
         )
         cursor = conn.cursor()
         break

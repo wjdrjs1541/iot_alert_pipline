@@ -1,3 +1,4 @@
 pandas
 kafka-python
 PyYAML
+python-dotenv

@@ -5,27 +5,16 @@ import logging
 from kafka import KafkaProducer
 from datetime import datetime
 import argparse
-import yaml
 import os
+import sys
 import random
 
 
-# ✅ config 경로
-CONFIG_PATH = "/config/kafka_config.yaml"
+# 상위 디렉토리를 path에 추가하여 다른 모듈을 import할 수 있도록 함
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from config.config import KAFKA_BROKERS, KAFKA_TOPIC, CSV_DATA_PATH
 
-def load_config(path: str) -> dict:
-    with open(path, "r") as file:
-        return yaml.safe_load(file)
 
-config = load_config(CONFIG_PATH)
-
-# ✅ 설정 파싱
-kafka_config = config["kafka"]
-producer_config = config["producer"]
-
-KAFKA_BROKERS = kafka_config["brokers"]
-KAFKA_TOPIC = kafka_config["topic"]
-CSV_PATH = producer_config["csv_path"]
 
 # ✅ 로깅 설정
 logging.basicConfig(
@@ -44,14 +33,14 @@ producer = KafkaProducer(
     bootstrap_servers=KAFKA_BROKERS,
     value_serializer=lambda v: json.dumps(v).encode("utf-8"),
     key_serializer=str.encode,
-    acks=producer_config.get("acks", "all"),
-    linger_ms=producer_config.get("linger_ms", 0),
-    enable_idempotence=producer_config.get("enable_idempotence", True)
+    acks="all",
+    linger_ms= 0 ,
+    enable_idempotence= True
 )
 
 # ✅ CSV 데이터 로딩
 try:
-    df = pd.read_csv(CSV_PATH, low_memory=False)
+    df = pd.read_csv(CSV_DATA_PATH, low_memory=False)
     df = df[df["mqtt.topic"] == "Temperature_and_Humidity"]
     df = df[["mqtt.topic", "mqtt.msg"]].fillna("null")
 except Exception as e:
