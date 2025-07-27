@@ -15,7 +15,7 @@
 ##### docker compose up -d
 
 ## 2. 🏗️ 아키텍처 
-<img width="1009" height="656" alt="image" src="https://github.com/user-attachments/assets/65bc18bf-ecd7-4405-af2d-03074fd67ba6" />
+<img width="1408" height="926" alt="image" src="https://github.com/user-attachments/assets/7ec76282-0d53-43fc-8a14-e6dc9484c66f" />
 
 ## 5. 🕖 To Do 7/24
 #####     Producer 병합
