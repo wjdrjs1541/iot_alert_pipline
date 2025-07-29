@@ -1,0 +1,108 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "type": "dashboard",
+        "name": "Annotations & Alerts",
+        "hide": true,
+        "enable": true,
+        "iconColor": "rgba(0, 211, 255, 1)"
+      }
+    ]
+  },
+  "editable": true,
+  "gnetId": null,
+  "graphTooltip": 0,
+  "id": null,
+  "iteration": 1712000000001,
+  "refresh": "10s",
+  "schemaVersion": 30,
+  "style": "dark",
+  "tags": [
+    "monitoring",
+    "cadvisor",
+    "containers"
+  ],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-5m",
+    "to": "now"
+  },
+  "timezone": "browser",
+  "title": "cAdvisor CPU & Memory (Fallback View)",
+  "uid": "cadvisor-cpu-memory-basic",
+  "version": 1,
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Host CPU Usage per Core (%)",
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "targets": [
+        {
+          "expr": "rate(container_cpu_usage_seconds_total{id=\"/\"}[1m]) * 100",
+          "legendFormat": "{{cpu}}",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Host Memory Usage (MB)",
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "megabytes",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 10
+      },
+      "targets": [
+        {
+          "expr": "container_memory_usage_bytes{id=\"/\"} / 1024 / 1024",
+          "legendFormat": "Host Memory",
+          "refId": "B"
+        }
+      ],
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "bottom"
+        }
+      }
+    }
+  ]
+}
