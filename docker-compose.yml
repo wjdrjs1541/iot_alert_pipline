@@ -14,6 +14,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - monitor-net
 
   kafka1:
     image: confluentinc/cp-kafka:7.3.2
@@ -37,6 +39,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - monitor-net
 
   kafka2:
     image: confluentinc/cp-kafka:7.3.2
@@ -62,6 +66,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - monitor-net
 
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
@@ -75,6 +81,8 @@ services:
       KAFKA_CLUSTERS_0_NAME: iot-broker-cluster
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka1:29092,kafka2:29093
       KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+    networks:
+      - monitor-net
 
   postgresql:
     image: postgres:15
@@ -93,6 +101,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - monitor-net
 
   sensor-a-producer:
     build:
@@ -108,6 +118,9 @@ services:
       - ./data:/app/data
       - ./config:/config
     restart: on-failure
+    networks:
+      - monitor-net
+
 
   sensor-b-producer:
     build:
@@ -123,6 +136,26 @@ services:
       - ./data:/app/data
       - ./config:/config
     restart: on-failure
+    networks:
+      - monitor-net
+
+  
+  loadtest_producer:
+    build:
+      context: ./producer
+    container_name: load_test_producer
+    command: ["python", "kafka_load_producer.py"]
+    depends_on:
+      kafka1:
+        condition: service_healthy
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./data:/app/data
+      - ./config:/config
+    restart: on-failure
+    networks:
+      - monitor-net
 
   processor:
     build:
@@ -139,6 +172,8 @@ services:
       - ./config:/config
     restart: on-failure
     command: ["python", "iot_data_processor.py"]
+    networks:
+      - monitor-net
 
   spark-master:
     build:
@@ -152,6 +187,8 @@ services:
     volumes:
       - ./spark:/opt/spark-apps  # calculate_anomaly_range.py 위치
       - ./spark/jars:/opt/spark/jars
+    networks:
+      - monitor-net
 
   spark-worker:
     build:
@@ -167,6 +204,8 @@ services:
     volumes:
       - ./spark:/opt/spark-apps
       - ./spark/jars:/opt/spark/jars
+    networks:
+      - monitor-net
     
 
   airflow-webserver:
@@ -190,6 +229,8 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./config:/opt/airflow/config
     command:  ["airflow", "webserver"]
+    networks:
+      - monitor-net
 
   airflow-scheduler:
     build:
@@ -208,6 +249,8 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./config:/opt/airflow/config
     command: ["airflow", "scheduler"]
+    networks:
+      - monitor-net
 
   kafka-exporter:
     image: danielqsj/kafka-exporter:latest
@@ -225,6 +268,8 @@ services:
       KAFKA_BROKERCONNECT: kafka1:29092,kafka2:29093
       KAFKA_VERSION: "2.8.0"
     restart: always
+    networks:
+      - monitor-net
 
   prometheus:
     image: prom/prometheus:latest

@@ -8,3 +8,18 @@ datasources:
     url: http://prometheus:9090
     isDefault: true
     editable: true
+
+  - name: PostgreSQL
+    type: postgres
+    access: proxy
+    orgId: 1
+    url: postgresql:5432
+    database: iot_data
+    user: postgres
+    secureJsonData:
+      password: postgres
+    jsonData:
+      sslmode: disable
+      postgresVersion: 1500  # PostgreSQL 15 버전 기준
+      timescaledb: false
+    editable: true

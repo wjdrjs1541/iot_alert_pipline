@@ -21,7 +21,7 @@
   "style": "dark",
   "tags": [
     "monitoring",
-    "cadvisor",
+    "iot",
     "containers"
   ],
   "templating": {
@@ -32,8 +32,8 @@
     "to": "now"
   },
   "timezone": "browser",
-  "title": "cAdvisor CPU & Memory (Fallback View)",
-  "uid": "cadvisor-cpu-memory-basic",
+  "title": "IoT Dashboard",
+  "uid": "iot-dashboard-grid",
   "version": 1,
   "panels": [
     {
@@ -51,7 +51,7 @@
       },
       "gridPos": {
         "h": 10,
-        "w": 24,
+        "w": 12,
         "x": 0,
         "y": 0
       },
@@ -72,6 +72,43 @@
     },
     {
       "type": "timeseries",
+      "title": "Temperature with Anomalies",
+      "datasource": "PostgreSQL",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT sent_time AS \"time\", temperature AS value, machine_id FROM sensor_data WHERE $__timeFilter(sent_time) ORDER BY sent_time ASC",
+          "format": "time_series"
+        },
+        {
+          "refId": "B",
+          "rawSql": "SELECT sent_time AS \"time\", temperature AS value, machine_id || ' (anomaly)' AS metric FROM anomaly_log WHERE temp_anomaly = true AND $__timeFilter(sent_time) ORDER BY sent_time ASC",
+          "format": "time_series"
+        }
+      ],
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": { "mode": "multi" }
+      }
+    },
+    {
+      "type": "timeseries",
       "title": "Host Memory Usage (MB)",
       "datasource": "Prometheus",
       "fieldConfig": {
@@ -85,7 +122,7 @@
       },
       "gridPos": {
         "h": 10,
-        "w": 24,
+        "w": 12,
         "x": 0,
         "y": 10
       },
@@ -102,6 +139,43 @@
           "displayMode": "table",
           "placement": "bottom"
         }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Humidity with Anomalies",
+      "datasource": "PostgreSQL",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 10
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT sent_time AS \"time\", humidity AS value, machine_id FROM sensor_data WHERE $__timeFilter(sent_time) ORDER BY sent_time ASC",
+          "format": "time_series"
+        },
+        {
+          "refId": "B",
+          "rawSql": "SELECT sent_time AS \"time\", humidity AS value, machine_id || ' (anomaly)' AS metric FROM anomaly_log WHERE hum_anomaly = true AND $__timeFilter(sent_time) ORDER BY sent_time ASC",
+          "format": "time_series"
+        }
+      ],
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": { "mode": "multi" }
       }
     }
   ]

@@ -12,13 +12,16 @@ import ssl
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import sys
+import threading
+from datetime import datetime, timezone, timedelta
 
 # 상위 디렉토리를 path에 추가하여 다른 모듈을 import할 수 있도록 함
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from config.config import KAFKA_BROKERS, KAFKA_TOPIC, GROUP_ID, EMAIL_SENDER, EMAIL_RECEIVER, EMAIL_PASSWORD, EMAIL_SMTP_PORT, EMAIL_SMTP_SERVER, POSTGRESQL_HOST, POSTGRESQL_DB, POSTGRESQL_USER, POSTGRESQL_PASSWORD, POSTGRESQL_PORT
+from config.config import KAFKA_BROKERS, KAFKA_TOPIC, GROUP_ID, EMAIL_SENDER, EMAIL_RECEIVER, EMAIL_PASSWORD, EMAIL_SMTP_PORT, EMAIL_SMTP_SERVER, POSTGRESQL_HOST, POSTGRESQL_DB, POSTGRESQL_USER, POSTGRESQL_PASSWORD, POSTGRESQL_PORT, MAX_EMAIL_RECORD_AGE
 
+last_email_sent = {}
 
-def send_email_alert(subject: str, body: str):
+def _send_email(subject: str, body: str):
 
     message = MIMEMultipart()
     message["Subject"] = subject
@@ -36,6 +39,12 @@ def send_email_alert(subject: str, body: str):
     except Exception as e:
         logger.error(f"🚨 이메일 전송 실패: {e}")
 
+def send_email_alert(subject: str, body: str, key: str, now: datetime):
+    def _send_and_mark():
+        _send_email(subject, body)
+        last_email_sent[key] = now
+
+    threading.Thread(target=_send_and_mark, daemon=True).start()
 
 # ✅ 로깅 설정
 logging.basicConfig(
@@ -141,7 +150,28 @@ for msg in consumer:
         is_hum_anomaly = not (min_hum <= humidity <= max_hum) if min_hum is not None and max_hum is not None else False
 
         if is_temp_anomaly or is_hum_anomaly:
+            key = f"{data['machine_id']}::{method}"
+            KST = timezone(timedelta(hours=9))
+            now = datetime.now(KST)
+
             logger.warning(f"🚨 이상치 탐지됨! [method={method}] machine_id={data['machine_id']}, temp={temperature}, hum={humidity}")
+
+            execute_with_retry(
+                cursor,
+                "INSERT INTO anomaly_log (machine_id, temperature, humidity, sent_time, temp_anomaly, hum_anomaly, method) VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                (data['machine_id'], temperature, humidity, data['sent_time'], is_temp_anomaly, is_hum_anomaly, method)
+            )
+
+            for k in list(last_email_sent.keys()):
+                if (now - last_email_sent[k]).total_seconds() > MAX_EMAIL_RECORD_AGE:
+                    del last_email_sent[k]
+
+            if key in last_email_sent:
+                elapsed = (now - last_email_sent[key]).total_seconds()
+                if elapsed < 3600:
+                    logger.info(f"⏳ 이메일 중복 방지: {key} 최근 {elapsed:.0f}초 전 발송됨, 스킵")
+                    continue
+            
             # ✅ 이메일 전송
             subject = f"[이상치 알림] {method.upper()} - machine_id: {data['machine_id']}"
             body = f"""
@@ -152,12 +182,7 @@ for msg in consumer:
             - 습도: {humidity}
             - 전송 시각: {data['sent_time']}
             """
-            send_email_alert(subject, body)
-            
-            execute_with_retry(
-                cursor,
-                "INSERT INTO anomaly_log (machine_id, temperature, humidity, sent_time, temp_anomaly, hum_anomaly, method) VALUES (%s, %s, %s, %s, %s, %s, %s)",
-                (data['machine_id'], temperature, humidity, data['sent_time'], is_temp_anomaly, is_hum_anomaly, method)
-            )
+            send_email_alert(subject, body, key, now)            
+
         else:
             logger.info(f"✅ 정상 데이터 [method={method}]: machine_id={data['machine_id']}, temperature={temperature}, humidity={humidity}")
