@@ -16,7 +16,8 @@
 #####      → docker compose up -d 
 
 ## 2. 🏗️ 아키텍처 
-<img width="1408" height="926" alt="image" src="https://github.com/user-attachments/assets/7ec76282-0d53-43fc-8a14-e6dc9484c66f" />
+<img width="1119" height="745" alt="image" src="https://github.com/user-attachments/assets/eda28d74-9633-44e1-b10a-219d76ce2a68" />
+
 
 ## 9. 🕖 To Do 7/28
 #####     대시보드 구축(온도/습도/이벤트 트렌드/CPU 점유율/메모리 점유율)
