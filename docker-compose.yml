@@ -88,16 +88,16 @@ services:
     image: postgres:15
     container_name: postgresql
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: iot_data
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./postgres-init:/docker-entrypoint-initdb.d 
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U postgresiot -d iot_data"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -139,23 +139,23 @@ services:
     networks:
       - monitor-net
 
-  
-  loadtest_producer:
-    build:
-      context: ./producer
-    container_name: load_test_producer
-    command: ["python", "kafka_load_producer.py"]
-    depends_on:
-      kafka1:
-        condition: service_healthy
-    environment:
-      - PYTHONUNBUFFERED=1
-    volumes:
-      - ./data:/app/data
-      - ./config:/config
-    restart: on-failure
-    networks:
-      - monitor-net
+  # #Load Test용
+  # loadtest_producer:
+  #   build:
+  #     context: ./producer
+  #   container_name: load_test_producer
+  #   command: ["python", "kafka_load_producer.py"]
+  #   depends_on:
+  #     kafka1:
+  #       condition: service_healthy
+  #   environment:
+  #     - PYTHONUNBUFFERED=1
+  #   volumes:
+  #     - ./data:/app/data
+  #     - ./config:/config
+  #   restart: on-failure
+  #   networks:
+  #     - monitor-net
 
   processor:
     build:
@@ -187,6 +187,7 @@ services:
     volumes:
       - ./spark:/opt/spark-apps  # calculate_anomaly_range.py 위치
       - ./spark/jars:/opt/spark/jars
+      - ./config:/opt/spark-apps/config
     networks:
       - monitor-net
 
@@ -204,6 +205,7 @@ services:
     volumes:
       - ./spark:/opt/spark-apps
       - ./spark/jars:/opt/spark/jars
+      - ./config:/opt/spark-apps/config
     networks:
       - monitor-net
     
@@ -217,9 +219,9 @@ services:
       - kafka1
       - spark-master
     environment:
-      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://postgres:postgres@postgresql/iot_data
-      - AIRFLOW__WEBSERVER__SECRET_KEY=GunDataEngineerSecretKey2025
-      - TZ=Asia/Seoul
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgresql/${POSTGRES_DB}
+      - AIRFLOW__WEBSERVER__SECRET_KEY=${AIRFLOW_SECRET_KEY}
+      - TZ=${TZ}
     ports:
       - "8080:8080"
     volumes:
@@ -239,9 +241,9 @@ services:
     depends_on:
       - airflow-webserver
     environment:
-      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://postgres:postgres@postgresql/iot_data
-      - AIRFLOW__WEBSERVER__SECRET_KEY=GunDataEngineerSecretKey2025
-      - TZ=Asia/Seoul
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgresql/${POSTGRES_DB}
+      - AIRFLOW__WEBSERVER__SECRET_KEY=${AIRFLOW_SECRET_KEY}
+      - TZ=${TZ}
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./spark:/opt/airflow/dags/scripts
@@ -299,6 +301,8 @@ services:
     restart: always
     networks:
       - monitor-net
+    env_file:
+      - .env
   
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:v0.36.0

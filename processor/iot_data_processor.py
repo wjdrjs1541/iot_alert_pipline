@@ -14,6 +14,7 @@ from email.mime.multipart import MIMEMultipart
 import sys
 import threading
 from datetime import datetime, timezone, timedelta
+import random
 
 # 상위 디렉토리를 path에 추가하여 다른 모듈을 import할 수 있도록 함
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -125,6 +126,9 @@ for msg in consumer:
         temperature_str, humidity_str = decoded_msg.split()
         temperature = float(temperature_str)
         humidity = float(humidity_str)
+        #랜덤 변수 적용
+        temperature *= random.uniform(0.99, 1.01)
+        humidity *= random.uniform(0.99, 1.01)
     except (binascii.Error, UnicodeDecodeError, ValueError, KeyError) as e:
         logger.error(f"🚨 mqtt_msg 디코딩 실패 또는 포맷 오류: {data.get('mqtt_msg')} / 에러: {e}")
         continue

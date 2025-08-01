@@ -72,43 +72,6 @@
     },
     {
       "type": "timeseries",
-      "title": "Temperature with Anomalies",
-      "datasource": "PostgreSQL",
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "palette-classic" }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 10,
-        "w": 12,
-        "x": 12,
-        "y": 0
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "rawSql": "SELECT sent_time AS \"time\", temperature AS value, machine_id FROM sensor_data WHERE $__timeFilter(sent_time) ORDER BY sent_time ASC",
-          "format": "time_series"
-        },
-        {
-          "refId": "B",
-          "rawSql": "SELECT sent_time AS \"time\", temperature AS value, machine_id || ' (anomaly)' AS metric FROM anomaly_log WHERE temp_anomaly = true AND $__timeFilter(sent_time) ORDER BY sent_time ASC",
-          "format": "time_series"
-        }
-      ],
-      "options": {
-        "legend": {
-          "showLegend": true,
-          "displayMode": "table",
-          "placement": "bottom"
-        },
-        "tooltip": { "mode": "multi" }
-      }
-    },
-    {
-      "type": "timeseries",
       "title": "Host Memory Usage (MB)",
       "datasource": "Prometheus",
       "fieldConfig": {
@@ -143,29 +106,79 @@
     },
     {
       "type": "timeseries",
-      "title": "Humidity with Anomalies",
+      "title": "Temperature with Anomalies - sensor_A",
       "datasource": "PostgreSQL",
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "palette-classic" }
+          "color": {
+            "mode": "palette-classic"
+          }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*\\(anomaly\\)$"
+            },
+            "properties": [
+              {
+                "id": "custom.drawStyle",
+                "value": "points"
+              },
+              {
+                "id": "custom.pointSize",
+                "value": 4
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 0
+              },
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#FF0000",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(?!.*\\(anomaly\\)).*"
+            },
+            "properties": [
+              {
+                "id": "custom.drawStyle",
+                "value": "line"
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 1
+              },
+              {
+                "id": "custom.pointSize",
+                "value": 0
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 10
+        "y": 20
       },
       "targets": [
         {
           "refId": "A",
-          "rawSql": "SELECT sent_time AS \"time\", humidity AS value, machine_id FROM sensor_data WHERE $__timeFilter(sent_time) ORDER BY sent_time ASC",
+          "rawSql": "SELECT sent_time AS \"time\", temperature AS value, machine_id FROM sensor_data WHERE machine_id = 'sensor_A' AND $__timeFilter(sent_time) ORDER BY sent_time ASC",
           "format": "time_series"
         },
         {
           "refId": "B",
-          "rawSql": "SELECT sent_time AS \"time\", humidity AS value, machine_id || ' (anomaly)' AS metric FROM anomaly_log WHERE hum_anomaly = true AND $__timeFilter(sent_time) ORDER BY sent_time ASC",
+          "rawSql": "SELECT sent_time AS \"time\", temperature AS value, machine_id || ' (anomaly)' AS metric FROM anomaly_log WHERE machine_id = 'sensor_A' AND temp_anomaly = true AND $__timeFilter(sent_time) ORDER BY sent_time ASC",
           "format": "time_series"
         }
       ],
@@ -175,7 +188,280 @@
           "displayMode": "table",
           "placement": "bottom"
         },
-        "tooltip": { "mode": "multi" }
+        "tooltip": {
+          "mode": "multi"
+        },
+        "connectNulls": true
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Humidity with Anomalies - sensor_A",
+      "datasource": "PostgreSQL",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*\\(anomaly\\)$"
+            },
+            "properties": [
+              {
+                "id": "custom.drawStyle",
+                "value": "points"
+              },
+              {
+                "id": "custom.pointSize",
+                "value": 4
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 0
+              },
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#FF0000",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(?!.*\\(anomaly\\)).*"
+            },
+            "properties": [
+              {
+                "id": "custom.drawStyle",
+                "value": "line"
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 1
+              },
+              {
+                "id": "custom.pointSize",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 30
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT sent_time AS \"time\", humidity AS value, machine_id FROM sensor_data WHERE machine_id = 'sensor_A' AND $__timeFilter(sent_time) ORDER BY sent_time ASC",
+          "format": "time_series"
+        },
+        {
+          "refId": "B",
+          "rawSql": "SELECT sent_time AS \"time\", humidity AS value, machine_id || ' (anomaly)' AS metric FROM anomaly_log WHERE machine_id = 'sensor_A' AND hum_anomaly = true AND $__timeFilter(sent_time) ORDER BY sent_time ASC",
+          "format": "time_series"
+        }
+      ],
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        },
+        "connectNulls": true
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Temperature with Anomalies - sensor_B",
+      "datasource": "PostgreSQL",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*\\(anomaly\\)$"
+            },
+            "properties": [
+              {
+                "id": "custom.drawStyle",
+                "value": "points"
+              },
+              {
+                "id": "custom.pointSize",
+                "value": 4
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 0
+              },
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#FF0000",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(?!.*\\(anomaly\\)).*"
+            },
+            "properties": [
+              {
+                "id": "custom.drawStyle",
+                "value": "line"
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 1
+              },
+              {
+                "id": "custom.pointSize",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 40
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT sent_time AS \"time\", temperature AS value, machine_id FROM sensor_data WHERE machine_id = 'sensor_B' AND $__timeFilter(sent_time) ORDER BY sent_time ASC",
+          "format": "time_series"
+        },
+        {
+          "refId": "B",
+          "rawSql": "SELECT sent_time AS \"time\", temperature AS value, machine_id || ' (anomaly)' AS metric FROM anomaly_log WHERE machine_id = 'sensor_B' AND temp_anomaly = true AND $__timeFilter(sent_time) ORDER BY sent_time ASC",
+          "format": "time_series"
+        }
+      ],
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        },
+        "connectNulls": true
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Humidity with Anomalies - sensor_B",
+      "datasource": "PostgreSQL",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*\\(anomaly\\)$"
+            },
+            "properties": [
+              {
+                "id": "custom.drawStyle",
+                "value": "points"
+              },
+              {
+                "id": "custom.pointSize",
+                "value": 4
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 0
+              },
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#FF0000",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(?!.*\\(anomaly\\)).*"
+            },
+            "properties": [
+              {
+                "id": "custom.drawStyle",
+                "value": "line"
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 1
+              },
+              {
+                "id": "custom.pointSize",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 50
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT sent_time AS \"time\", humidity AS value, machine_id FROM sensor_data WHERE machine_id = 'sensor_B' AND $__timeFilter(sent_time) ORDER BY sent_time ASC",
+          "format": "time_series"
+        },
+        {
+          "refId": "B",
+          "rawSql": "SELECT sent_time AS \"time\", humidity AS value, machine_id || ' (anomaly)' AS metric FROM anomaly_log WHERE machine_id = 'sensor_B' AND hum_anomaly = true AND $__timeFilter(sent_time) ORDER BY sent_time ASC",
+          "format": "time_series"
+        }
+      ],
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        },
+        "connectNulls": true
       }
     }
   ]

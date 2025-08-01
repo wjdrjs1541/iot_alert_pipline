@@ -57,7 +57,7 @@ for idx, row in df.iterrows():
     }
     producer.send(KAFKA_TOPIC, key=args.machine, value=message)
     logging.info(f"[{args.machine}] {message}")
-    time.sleep(random.uniform(1, 2))
+    time.sleep(1)
 
 producer.flush()
 producer.close()

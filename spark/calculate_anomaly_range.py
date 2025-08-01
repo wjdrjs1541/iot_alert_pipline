@@ -1,6 +1,12 @@
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import expr, current_timestamp
 from sqlalchemy import create_engine, text
+import os
+import sys
+
+sys.path.insert(0, "/opt/airflow")
+from config.config import POSTGRESQL_HOST, POSTGRESQL_DB, POSTGRESQL_USER, POSTGRESQL_PASSWORD, POSTGRESQL_PORT
+
 
 # ✅ Spark 세션 생성
 spark = SparkSession.builder \
@@ -11,11 +17,10 @@ spark = SparkSession.builder \
 # ✅ PostgreSQL → Spark 로드
 sensor_df = spark.read \
     .format("jdbc") \
-    .option("url", "jdbc:postgresql://postgresql:5432/iot_data") \
+    .option("url", f"jdbc:postgresql://{POSTGRESQL_HOST}:{POSTGRESQL_PORT}/{POSTGRESQL_DB}") \
     .option("dbtable", "(SELECT * FROM sensor_data WHERE sent_time >= current_timestamp - interval '1 day') AS recent") \
-    .option("dbtable", "sensor_data") \
-    .option("user", "postgres") \
-    .option("password", "postgres") \
+    .option("user", POSTGRESQL_USER) \
+    .option("password", POSTGRESQL_PASSWORD) \
     .option("driver", "org.postgresql.Driver") \
     .load()
 
@@ -64,17 +69,16 @@ final_df = quantile_df.unionByName(iqr_df)
 temp_table = "temp_anomaly_range"
 final_df.write \
     .format("jdbc") \
-    .option("url", "jdbc:postgresql://postgresql:5432/iot_data") \
+    .option("url", f"jdbc:postgresql://{POSTGRESQL_HOST}:{POSTGRESQL_PORT}/{POSTGRESQL_DB}") \
     .option("dbtable", temp_table) \
-    .option("user", "postgres") \
-    .option("password", "postgres") \
+    .option("user", POSTGRESQL_USER) \
+    .option("password", POSTGRESQL_PASSWORD) \
     .option("driver", "org.postgresql.Driver") \
     .mode("overwrite") \
     .save()
 
 # ✅ anomaly_range 테이블에 UPSERT
-engine = create_engine("postgresql+psycopg2://postgres:postgres@postgresql:5432/iot_data")
-
+engine = create_engine(f"postgresql+psycopg2://{POSTGRESQL_USER}:{POSTGRESQL_PASSWORD}@{POSTGRESQL_HOST}:{POSTGRESQL_PORT}/{POSTGRESQL_DB}")
 
 with engine.connect() as conn:
     conn.execute(text("""
