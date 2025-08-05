@@ -463,6 +463,85 @@
         },
         "connectNulls": true
       }
+    },
+    {
+      "type": "timeseries",
+      "title": "Kafka Messages In (approx)",
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops", 
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 20
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (topic) (rate(kafka_topic_partition_current_offset{topic!~'__.*'}[1m]))",
+          "legendFormat": "Messages In - {{topic}}"
+        }
+      ],
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        },
+        "connectNulls": true
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Kafka Consumer Lag",
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short", 
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 30
+      },
+      "targets": [
+        {
+          "refId": "B",
+          "expr": "kafka_consumergroup_lag",
+          "legendFormat": "Lag - {{consumergroup}} / {{topic}}"
+        }
+      ],
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        },
+        "connectNulls": true
+      }
     }
+
+
+
   ]
 }
