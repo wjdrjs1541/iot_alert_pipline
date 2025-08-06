@@ -156,6 +156,8 @@ services:
   #   restart: on-failure
   #   networks:
   #     - monitor-net
+  #test
+
 
   processor:
     build:
